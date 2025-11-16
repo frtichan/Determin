@@ -10,9 +10,7 @@ services:
       - key: SECRET_KEY
         generateValue: true  # 自動生成される安全なキー
       - key: DATABASE_URL
-        fromDatabase:
-          name: dontlet-db
-          property: connectionString
+        sync: false  # デプロイ後に手動で設定
       - key: OPENAI_API_KEY
         sync: false  # 手動で設定が必要
       - key: OPENAI_MODEL
@@ -20,10 +18,9 @@ services:
       - key: PYTHON_VERSION
         value: 3.11.0
 
-# PostgreSQL Database
-databases:
-  - name: dontlet-db
-    plan: starter  # 無料プランは "free"、有料最安値は "starter" ($7/月)
-    databaseName: dontlet
-    user: dontlet
+# データベースは手動で作成し、DATABASE_URLを環境変数に設定してください
+# 手順：
+# 1. Render.comダッシュボードで「New +」→「PostgreSQL」を選択
+# 2. 作成後、「Internal Database URL」をコピー
+# 3. Web Serviceの「Environment」タブで DATABASE_URL に貼り付け
 
