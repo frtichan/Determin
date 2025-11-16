@@ -23,7 +23,7 @@ services:
 # PostgreSQL Database
 databases:
   - name: dontlet-db
-    plan: standard  # 無料プランは "free"、有料は "standard" ($7/月)
+    plan: basic  # 無料プランは "free"、有料は "basic" ($7/月)
     databaseName: dontlet
     user: dontlet
 
