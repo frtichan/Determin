@@ -14,6 +14,18 @@
           <a href="/">ホーム</a>
           <a href="/docs" target="_blank">APIドキュメント</a>
         </nav>
+        <div id="userInfo" class="user-info">
+          <!-- ログイン前 -->
+          <div id="authButtons" style="display: none;">
+            <button id="loginBtn" class="btn-secondary">ログイン</button>
+            <button id="registerBtn" class="btn-primary">新規登録</button>
+          </div>
+          <!-- ログイン後 -->
+          <div id="userMenu" style="display: none;">
+            <span id="userName" class="user-name"></span>
+            <button id="logoutBtn" class="btn-secondary">ログアウト</button>
+          </div>
+        </div>
       </div>
     </header>
     <main class="container">

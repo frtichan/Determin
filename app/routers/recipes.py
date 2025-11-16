@@ -1,12 +1,13 @@
 from datetime import datetime
 from typing import Optional, Any, Dict, List
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlmodel import Session, select
 
+from ..auth import get_current_user_from_token, get_current_user_optional
 from ..db import get_engine
-from ..models import Recipe, RecipeVersion
+from ..models import Recipe, RecipeVersion, User
 
 
 router = APIRouter()
@@ -43,10 +44,19 @@ class RecipeDetail(BaseModel):
 
 
 @router.get("")
-def list_recipes(sort: str = "created") -> Dict[str, List[RecipeListItem]]:
-    """レシピ一覧を取得。sort='created'で作成日順、'used'で最近使用順"""
+def list_recipes(
+    sort: str = "created",
+    current_user: Optional[User] = Depends(get_current_user_optional)
+) -> Dict[str, List[RecipeListItem]]:
+    """レシピ一覧を取得。sort='created'で作成日順、'used'で最近使用順
+    ログイン済みの場合は自分のレシピのみ、未ログインの場合は全レシピを表示"""
     with Session(get_engine()) as session:
         stmt = select(Recipe)
+        
+        # ログイン済みの場合は自分のレシピのみフィルタ
+        if current_user:
+            stmt = stmt.where(Recipe.owner_user_id == current_user.id)
+        
         if sort == "used":
             stmt = stmt.order_by(Recipe.last_used_at.desc())  # type: ignore
         else:
@@ -67,12 +77,19 @@ def list_recipes(sort: str = "created") -> Dict[str, List[RecipeListItem]]:
 
 
 @router.get("/{recipe_id}")
-def get_recipe(recipe_id: int) -> RecipeDetail:
+def get_recipe(
+    recipe_id: int,
+    current_user: Optional[User] = Depends(get_current_user_optional)
+) -> RecipeDetail:
     """レシピの詳細とDSLを取得し、使用日時を更新"""
     with Session(get_engine()) as session:
         recipe = session.get(Recipe, recipe_id)
         if not recipe:
             raise HTTPException(status_code=404, detail="Recipe not found")
+        
+        # 権限チェック：ログイン済みの場合、自分のレシピのみアクセス可能
+        if current_user and recipe.owner_user_id and recipe.owner_user_id != current_user.id:
+            raise HTTPException(status_code=403, detail="このレシピにアクセスする権限がありません")
         
         # 最新バージョンのDSLとチャット履歴を取得
         dsl = {}
@@ -100,10 +117,16 @@ def get_recipe(recipe_id: int) -> RecipeDetail:
 
 
 @router.post("/save")
-def save_recipe(req: RecipeSaveRequest) -> Dict[str, int]:
-    """新しいレシピを保存"""
+def save_recipe(
+    req: RecipeSaveRequest,
+    current_user: User = Depends(get_current_user_from_token)
+) -> Dict[str, int]:
+    """新しいレシピを保存（要認証）"""
     with Session(get_engine()) as session:
-        recipe = Recipe(name=req.name)
+        recipe = Recipe(
+            name=req.name,
+            owner_user_id=current_user.id  # type: ignore[arg-type]
+        )
         session.add(recipe)
         session.commit()
         session.refresh(recipe)
@@ -111,7 +134,8 @@ def save_recipe(req: RecipeSaveRequest) -> Dict[str, int]:
         version = RecipeVersion(
             recipe_id=recipe.id,  # type: ignore[arg-type]
             dsl=req.dsl,
-            chat_history=req.chat_history
+            chat_history=req.chat_history,
+            created_by=current_user.id  # type: ignore[arg-type]
         )
         session.add(version)
         session.commit()
@@ -125,12 +149,20 @@ def save_recipe(req: RecipeSaveRequest) -> Dict[str, int]:
 
 
 @router.put("/{recipe_id}")
-def update_recipe(recipe_id: int, req: RecipeUpdateRequest) -> Dict[str, str]:
-    """既存のレシピを更新（名前変更または新しいバージョン追加）"""
+def update_recipe(
+    recipe_id: int,
+    req: RecipeUpdateRequest,
+    current_user: User = Depends(get_current_user_from_token)
+) -> Dict[str, str]:
+    """既存のレシピを更新（要認証・所有者のみ）"""
     with Session(get_engine()) as session:
         recipe = session.get(Recipe, recipe_id)
         if not recipe:
             raise HTTPException(status_code=404, detail="Recipe not found")
+        
+        # 権限チェック：所有者のみ更新可能
+        if recipe.owner_user_id != current_user.id:
+            raise HTTPException(status_code=403, detail="このレシピを更新する権限がありません")
         
         # 名前を更新
         if req.name:
@@ -141,7 +173,8 @@ def update_recipe(recipe_id: int, req: RecipeUpdateRequest) -> Dict[str, str]:
             version = RecipeVersion(
                 recipe_id=recipe.id,  # type: ignore[arg-type]
                 dsl=req.dsl,
-                chat_history=req.chat_history
+                chat_history=req.chat_history,
+                created_by=current_user.id  # type: ignore[arg-type]
             )
             session.add(version)
             session.commit()
@@ -155,12 +188,19 @@ def update_recipe(recipe_id: int, req: RecipeUpdateRequest) -> Dict[str, str]:
 
 
 @router.delete("/{recipe_id}")
-def delete_recipe(recipe_id: int) -> Dict[str, str]:
-    """レシピを削除"""
+def delete_recipe(
+    recipe_id: int,
+    current_user: User = Depends(get_current_user_from_token)
+) -> Dict[str, str]:
+    """レシピを削除（要認証・所有者のみ）"""
     with Session(get_engine()) as session:
         recipe = session.get(Recipe, recipe_id)
         if not recipe:
             raise HTTPException(status_code=404, detail="Recipe not found")
+        
+        # 権限チェック：所有者のみ削除可能
+        if recipe.owner_user_id != current_user.id:
+            raise HTTPException(status_code=403, detail="このレシピを削除する権限がありません")
         
         # 関連するバージョンも削除
         versions = session.exec(select(RecipeVersion).where(RecipeVersion.recipe_id == recipe_id)).all()

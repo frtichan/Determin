@@ -1,5 +1,61 @@
 {% extends "base.html" %}
 {% block content %}
+  <!-- ログイン/登録モーダル -->
+  <div id="authModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <span class="modal-close">&times;</span>
+      
+      <!-- ログインフォーム -->
+      <div id="loginForm" style="display: none;">
+        <h2>ログイン</h2>
+        <form id="loginFormElement">
+          <div class="form-group">
+            <label for="loginEmail">メールアドレス</label>
+            <input type="email" id="loginEmail" required />
+          </div>
+          <div class="form-group">
+            <label for="loginPassword">パスワード</label>
+            <input type="password" id="loginPassword" required />
+          </div>
+          <div id="loginError" class="error" style="display: none;"></div>
+          <div class="actions">
+            <button type="submit" class="btn-primary">ログイン</button>
+            <button type="button" id="switchToRegister" class="btn-link">アカウントを作成</button>
+          </div>
+        </form>
+      </div>
+      
+      <!-- 登録フォーム -->
+      <div id="registerForm" style="display: none;">
+        <h2>新規登録</h2>
+        <form id="registerFormElement">
+          <div class="form-group">
+            <label for="registerName">名前</label>
+            <input type="text" id="registerName" required />
+          </div>
+          <div class="form-group">
+            <label for="registerEmail">メールアドレス</label>
+            <input type="email" id="registerEmail" required />
+          </div>
+          <div class="form-group">
+            <label for="registerPassword">パスワード（8文字以上）</label>
+            <input type="password" id="registerPassword" required minlength="8" />
+          </div>
+          <div class="form-group">
+            <label for="registerPasswordConfirm">パスワード（確認）</label>
+            <input type="password" id="registerPasswordConfirm" required minlength="8" />
+          </div>
+          <div id="registerError" class="error" style="display: none;"></div>
+          <div class="actions">
+            <button type="submit" class="btn-primary">登録</button>
+            <button type="button" id="switchToLogin" class="btn-link">ログインに戻る</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+
   <!-- 左側: レシピサイドバー（画面左端固定） -->
   <aside class="recipe-sidebar">
       <div style="padding: 0; display: flex; flex-direction: column; height: 100%;">

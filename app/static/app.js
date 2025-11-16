@@ -1,4 +1,151 @@
+// ===============================
+// 認証管理
+// ===============================
+let currentUser = null;
+
+// 現在のユーザー情報を取得
+async function checkAuth() {
+  try {
+    const resp = await fetch('/auth/me/optional');
+    if (resp.ok) {
+      const data = await resp.json();
+      currentUser = data.user;
+      updateAuthUI();
+    }
+  } catch (err) {
+    console.error('認証チェックエラー:', err);
+  }
+}
+
+// 認証UIの更新
+function updateAuthUI() {
+  const authButtons = document.getElementById('authButtons');
+  const userMenu = document.getElementById('userMenu');
+  const userName = document.getElementById('userName');
+  
+  if (currentUser) {
+    authButtons.style.display = 'none';
+    userMenu.style.display = 'flex';
+    userName.textContent = currentUser.name;
+  } else {
+    authButtons.style.display = 'flex';
+    userMenu.style.display = 'none';
+  }
+}
+
+// モーダル表示・非表示
+function showModal(type) {
+  const modal = document.getElementById('authModal');
+  const loginForm = document.getElementById('loginForm');
+  const registerForm = document.getElementById('registerForm');
+  
+  // エラーメッセージをクリア
+  document.getElementById('loginError').style.display = 'none';
+  document.getElementById('registerError').style.display = 'none';
+  
+  if (type === 'login') {
+    loginForm.style.display = 'block';
+    registerForm.style.display = 'none';
+  } else {
+    loginForm.style.display = 'none';
+    registerForm.style.display = 'block';
+  }
+  
+  modal.style.display = 'block';
+}
+
+function hideModal() {
+  document.getElementById('authModal').style.display = 'none';
+}
+
+// ログイン処理
+async function handleLogin(e) {
+  e.preventDefault();
+  const email = document.getElementById('loginEmail').value;
+  const password = document.getElementById('loginPassword').value;
+  const errorDiv = document.getElementById('loginError');
+  
+  try {
+    const resp = await fetch('/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    
+    const data = await resp.json();
+    
+    if (resp.ok) {
+      currentUser = data.user;
+      updateAuthUI();
+      hideModal();
+      await loadRecipes(); // レシピリストを再読み込み
+      document.getElementById('loginFormElement').reset();
+    } else {
+      errorDiv.textContent = data.detail || 'ログインに失敗しました';
+      errorDiv.style.display = 'block';
+    }
+  } catch (err) {
+    errorDiv.textContent = 'ログイン中にエラーが発生しました';
+    errorDiv.style.display = 'block';
+  }
+}
+
+// 登録処理
+async function handleRegister(e) {
+  e.preventDefault();
+  const name = document.getElementById('registerName').value;
+  const email = document.getElementById('registerEmail').value;
+  const password = document.getElementById('registerPassword').value;
+  const passwordConfirm = document.getElementById('registerPasswordConfirm').value;
+  const errorDiv = document.getElementById('registerError');
+  
+  // パスワード確認
+  if (password !== passwordConfirm) {
+    errorDiv.textContent = 'パスワードが一致しません';
+    errorDiv.style.display = 'block';
+    return;
+  }
+  
+  try {
+    const resp = await fetch('/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, name })
+    });
+    
+    const data = await resp.json();
+    
+    if (resp.ok) {
+      currentUser = data.user;
+      updateAuthUI();
+      hideModal();
+      await loadRecipes(); // レシピリストを再読み込み
+      document.getElementById('registerFormElement').reset();
+    } else {
+      errorDiv.textContent = data.detail || '登録に失敗しました';
+      errorDiv.style.display = 'block';
+    }
+  } catch (err) {
+    errorDiv.textContent = '登録中にエラーが発生しました';
+    errorDiv.style.display = 'block';
+  }
+}
+
+// ログアウト処理
+async function handleLogout() {
+  try {
+    await fetch('/auth/logout', { method: 'POST' });
+    currentUser = null;
+    updateAuthUI();
+    await loadRecipes(); // レシピリストを再読み込み
+  } catch (err) {
+    console.error('ログアウトエラー:', err);
+  }
+}
+
+// ===============================
 // デフォルトのDSL
+// ===============================
 const defaultDSL = {
   steps: [
     { op: "regex_extract", column: "line", pattern: "\\d+$", group: 0, as: "trailing_number" },
@@ -738,7 +885,17 @@ async function confirmSaveRecipe() {
       })
     });
     const data = await resp.json();
-    if (!resp.ok) throw new Error(data.detail || '保存に失敗しました');
+    
+    if (!resp.ok) {
+      // 認証エラーの場合
+      if (resp.status === 401) {
+        hideRecipeNameInput();
+        alert('レシピを保存するにはログインが必要です');
+        showModal('login');
+        return;
+      }
+      throw new Error(data.detail || '保存に失敗しました');
+    }
     
     currentRecipeId = data.recipe_id;
     document.getElementById('currentRecipeInfo').innerText = `現在のレシピ: ${name}`;
@@ -816,6 +973,42 @@ function createNewRecipe() {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
+  // 認証状態チェック
+  checkAuth();
+  
+  // 認証関連イベントリスナー
+  const loginBtn = document.getElementById('loginBtn');
+  loginBtn?.addEventListener('click', () => showModal('login'));
+  
+  const registerBtn = document.getElementById('registerBtn');
+  registerBtn?.addEventListener('click', () => showModal('register'));
+  
+  const logoutBtn = document.getElementById('logoutBtn');
+  logoutBtn?.addEventListener('click', handleLogout);
+  
+  const modalClose = document.querySelector('.modal-close');
+  modalClose?.addEventListener('click', hideModal);
+  
+  const switchToRegister = document.getElementById('switchToRegister');
+  switchToRegister?.addEventListener('click', () => showModal('register'));
+  
+  const switchToLogin = document.getElementById('switchToLogin');
+  switchToLogin?.addEventListener('click', () => showModal('login'));
+  
+  const loginFormElement = document.getElementById('loginFormElement');
+  loginFormElement?.addEventListener('submit', handleLogin);
+  
+  const registerFormElement = document.getElementById('registerFormElement');
+  registerFormElement?.addEventListener('submit', handleRegister);
+  
+  // モーダル外クリックで閉じる
+  const authModal = document.getElementById('authModal');
+  authModal?.addEventListener('click', (e) => {
+    if (e.target === authModal) {
+      hideModal();
+    }
+  });
+
   const runBtn = document.getElementById('runBtn');
   runBtn?.addEventListener('click', runPreview);
   const aiBtn = document.getElementById('aiBtn');
