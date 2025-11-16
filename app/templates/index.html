@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block content %}
+  <!-- 左側: レシピサイドバー（画面左端固定） -->
+  <aside class="recipe-sidebar">
+      <div style="padding: 0; display: flex; flex-direction: column; height: 100%;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-shrink: 0;">
+          <h2 style="font-size: 1.1em; margin: 0;">保存済みレシピ</h2>
+          <button id="newRecipeBtn" class="new-recipe-btn" title="新しいレシピを作成">+ 新規</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;font-size:0.85em;flex-wrap:nowrap;flex-shrink:0;">
+          <label style="display:flex;align-items:center;gap:3px;margin:0;cursor:pointer;white-space:nowrap;">
+            <input type="radio" name="sortRecipe" value="used" checked style="margin:0;" /> 最近使用
+          </label>
+          <label style="display:flex;align-items:center;gap:3px;margin:0;cursor:pointer;white-space:nowrap;">
+            <input type="radio" name="sortRecipe" value="created" style="margin:0;" /> 作成日
+          </label>
+        </div>
+        <div id="recipeList" class="recipe-list" style="flex: 1; overflow-y: auto; margin-bottom: 12px;"></div>
+        <div id="currentRecipeInfo" class="muted" style="font-size:0.85em;padding-top:10px;border-top:1px solid var(--border);flex-shrink:0;"></div>
+      </div>
+  </aside>
+
+  <!-- メインコンテンツエリア -->
+  <div class="main-content">
+    <div class="layout">
+      <!-- 左余白（5%） -->
+      <div class="spacer"></div>
+      
+      <!-- 中央: プレビュー（45%） -->
+      <div class="col-center">
+      <section class="card">
+        <h2>かんたんプレビュー（GUI）</h2>
+        <p>サンプル入力して、AIと会話しながらアルゴリズムを作成します。</p>
+        <div>
+          <label for="inputData">入力データ</label>
+          <textarea id="inputData" rows="10">XX13
+XX8423
+XX923
+no-num</textarea>
+        </div>
+        <div class="actions">
+          <button id="runBtn">実行して結果を見る</button>
+        </div>
+        <div id="resultBox" class="result-box" hidden>
+          <h3>結果</h3>
+          <label style="display:flex;align-items:center;gap:8px;margin:4px 0 8px;">
+            <input type="checkbox" id="hideHeaderToggle" /> ヘッダ行を表示しない
+          </label>
+          <div id="resultMeta" class="muted"></div>
+          <div id="resultTable"></div>
+          <div id="resultError" class="error" hidden></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>本データで実行 / 保存</h2>
+        <div>
+          <label for="realData">本データ（テキスト/CSV/JSONを貼り付け）</label>
+          <textarea id="realData" rows="8"></textarea>
+        </div>
+        <div class="actions" style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button id="runRealBtn">本データを実行</button>
+        </div>
+        
+        <!-- レシピ名入力UI（初期状態は非表示） -->
+        <div id="recipeNameInput" class="recipe-name-input" style="display:none;margin-top:12px;padding:12px;background:rgba(59,130,246,0.05);border:1px solid var(--border);border-radius:8px;">
+          <label for="recipeNameField" style="font-weight:600;margin-bottom:8px;">レシピ名</label>
+          <input type="text" id="recipeNameField" placeholder="例: 末尾数字抽出" style="margin-bottom:8px;" />
+          <div style="display:flex;gap:8px;">
+            <button id="confirmSaveBtn" style="flex:1;background:#10b981;">保存</button>
+            <button id="cancelSaveBtn" style="flex:1;background:#6b7280;">キャンセル</button>
+          </div>
+        </div>
+        
+        <div class="actions" style="display:flex;gap:8px;margin-top:8px;">
+          <button id="saveBtn" style="flex:1;">新規保存</button>
+          <button id="updateBtn" disabled style="flex:1;">上書き保存</button>
+          <button id="saveAsBtn" disabled style="flex:1;">別名で保存</button>
+        </div>
+      </section>
+      </div>
+
+      <!-- 右側: AIチャット（45%） -->
+      <aside class="chat-panel">
+        <section class="card" style="position: sticky; top: 16px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <h2 style="margin: 0;">AIチャット</h2>
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.9em; margin: 0; cursor: pointer;">
+              <input type="checkbox" id="debugModeToggle" style="width: auto; margin: 0;" />
+              <span style="color: var(--muted);">デバッグモード</span>
+            </label>
+          </div>
+          <div id="chatLog" class="chat-messages"></div>
+          <div class="chat-input">
+            <textarea id="chatInput" rows="3" placeholder="メッセージを入力（Enterで送信、Shift+Enterで改行）"></textarea>
+            <details style="margin-top:8px;">
+              <summary>オプション（期待する結果を添付）</summary>
+              <label for="expectedData" style="margin-top:8px;">期待する結果（JSON配列 or 行テキスト）</label>
+              <textarea id="expectedData" rows="4"></textarea>
+            </details>
+            <div class="actions" style="margin-top:8px;">
+              <button id="aiBtn">送信</button>
+            </div>
+          </div>
+        </section>
+      </aside>
+      
+      <!-- 右余白（5%） -->
+      <div class="spacer"></div>
+    </div>
+  </div>
+{% endblock %}
+
+

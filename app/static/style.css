@@ -1,0 +1,332 @@
+:root {
+  --bg: #f8f9fa;
+  --panel: #ffffff;
+  --text: #1a1a1a;
+  --muted: #6b7280;
+  --accent: #3b82f6;
+  --border: #e5e7eb;
+  --danger: #ef4444;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Noto Sans JP", sans-serif;
+  line-height: 1.6;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+.container { max-width: 1800px; margin: 0 auto; padding: 16px; width: 100%; }
+main.container { 
+  flex: 1; 
+  display: flex; 
+  padding: 0; 
+  max-width: none; 
+  overflow: hidden;
+}
+.site-header, .site-footer { 
+  border-bottom: 1px solid var(--border); 
+  background: #ffffff;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+.site-footer { 
+  border-top: 1px solid var(--border); 
+  border-bottom: none; 
+  margin-top: 0;
+  box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.05);
+}
+.site-header h1 { margin: 0; font-size: 20px; color: var(--text); }
+nav a { color: var(--muted); margin-right: 12px; text-decoration: none; }
+nav a:hover { color: var(--accent); }
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+label { display: block; margin-bottom: 6px; color: var(--muted); font-weight: 500; }
+textarea, select, input, button {
+  width: 100%; padding: 10px; border-radius: 8px;
+  background: #ffffff; color: var(--text); border: 1px solid var(--border);
+}
+textarea:focus, select:focus, input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+button { background: var(--accent); border: none; color: #ffffff; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+button:hover { background: #2563eb; transform: translateY(-1px); box-shadow: 0 4px 6px rgba(59, 130, 246, 0.2); }
+button:disabled { background: #d1d5db; color: #9ca3af; cursor: not-allowed; transform: none; box-shadow: none; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+/* レシピサイドバー（画面左端固定） */
+.recipe-sidebar {
+  width: 280px;
+  background: #ffffff;
+  border-right: 1px solid var(--border);
+  overflow: hidden;
+  flex-shrink: 0;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+}
+.recipe-sidebar > div {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.recipe-sidebar h2 {
+  color: var(--text);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.new-recipe-btn {
+  padding: 6px 12px;
+  font-size: 0.85em;
+  font-weight: 600;
+  background: var(--accent);
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: auto;
+}
+.new-recipe-btn:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+}
+
+/* メインコンテンツエリア */
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* プレビューとチャットの2列レイアウト（左右に余白） */
+.layout { 
+  display: grid; 
+  grid-template-columns: 0.5fr 4.5fr 4.5fr 0.5fr; /* 左余白:プレビュー:チャット:右余白 = 0.5:4.5:4.5:0.5 */
+  gap: 0 16px; /* 横のみgap */
+  padding: 16px;
+  flex: 1;
+  width: 100%;
+}
+/* 余白用の空div */
+.spacer { 
+  /* 何も表示しない */ 
+}
+/* recipe-list のスタイルはインラインで定義 */
+.recipe-item { 
+  border-radius: 8px; 
+  padding: 8px 10px; 
+  margin-bottom: 2px; 
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.recipe-item:hover { background: rgba(59, 130, 246, 0.08); }
+.recipe-item.active { background: rgba(59, 130, 246, 0.12); border-left: 3px solid var(--accent); padding-left: 7px; }
+.recipe-name { 
+  font-weight: 600; 
+  font-size: 0.95em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text);
+}
+.recipe-meta { 
+  font-size: 0.75em; 
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.recipe-actions { 
+  display: none;
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+}
+.recipe-item:hover .recipe-actions { 
+  display: block;
+}
+.recipe-actions.active {
+  display: block !important;
+}
+.recipe-options-btn { 
+  font-size: 1.2em; 
+  padding: 2px 8px; 
+  background: #f3f4f6;
+  color: var(--text);
+  border: 1px solid var(--border);
+  width: auto;
+  border-radius: 4px;
+  cursor: pointer;
+  line-height: 1;
+}
+.recipe-options-btn:hover { 
+  background: var(--accent);
+  color: #ffffff;
+  transform: none;
+  box-shadow: none;
+}
+.recipe-dropdown-menu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 4px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 140px;
+  z-index: 1001;
+  overflow: hidden;
+}
+.recipe-dropdown-menu button {
+  width: 100%;
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--panel);
+  color: var(--text);
+  border: none;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9em;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.recipe-dropdown-menu button:last-child {
+  border-bottom: none;
+}
+.recipe-dropdown-menu button:hover {
+  background: rgba(59, 130, 246, 0.08);
+  transform: none;
+  box-shadow: none;
+}
+.recipe-dropdown-menu button.danger:hover {
+  background: rgba(239, 68, 68, 0.08);
+  color: var(--danger);
+}
+/* レシピ名のインライン編集 */
+.recipe-name-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 0;
+}
+.recipe-name-edit input {
+  font-size: 0.95em;
+  padding: 4px 6px;
+  font-weight: 600;
+}
+.recipe-name-edit-actions {
+  display: flex;
+  gap: 4px;
+}
+.recipe-name-edit-actions button {
+  font-size: 0.8em;
+  padding: 4px 8px;
+  flex: 1;
+}
+.chat-panel { 
+  max-width: 100%;
+  overflow: hidden;
+}
+.chat-messages { 
+  max-height: 60vh; 
+  overflow-x: hidden;
+  overflow-y: auto; 
+  margin-bottom: 8px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+.chat-input { position: relative; }
+.actions { margin-top: 12px; }
+.result-box { margin-top: 12px; }
+.muted { color: var(--muted); }
+.error { color: var(--danger); font-weight: 600; }
+.chat-bubble { 
+  border: 1px solid var(--border); 
+  border-radius: 8px; 
+  padding: 10px 12px; 
+  margin: 8px 0;
+  max-width: 100%;
+  overflow: hidden;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+.chat-role { font-weight: 600; color: var(--accent); margin-right: 6px; }
+.chat-bubble.me { background: #eff6ff; text-align: right; border-color: #bfdbfe; }
+.chat-bubble.ai { background: #f9fafb; border-color: var(--border); }
+.chat-dsl { margin: 8px 0; font-size: 0.9em; }
+.chat-dsl summary { cursor: pointer; color: var(--muted); padding: 4px 0; font-weight: 500; }
+.chat-dsl summary:hover { color: var(--accent); }
+.chat-dsl pre { 
+  background: #f3f4f6; 
+  border: 1px solid var(--border); 
+  border-radius: 6px; 
+  padding: 10px; 
+  margin-top: 6px; 
+  overflow-x: auto; 
+  font-size: 0.85em;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+}
+.debug-info {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 8px 0;
+  font-family: "Consolas", "Monaco", monospace;
+  font-size: 0.85em;
+  max-width: 100%;
+  overflow: hidden;
+}
+.debug-info-title {
+  font-weight: 600;
+  color: #b45309;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.debug-info pre {
+  background: #ffffff;
+  border: 1px solid #fbbf24;
+  border-radius: 6px;
+  padding: 10px;
+  margin-top: 6px;
+  overflow-x: auto;
+  font-size: 0.85em;
+  color: var(--text);
+  max-height: 400px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+th, td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; }
+th { background: #f9fafb; font-weight: 600; color: var(--text); }
+td { background: #ffffff; }
+
+

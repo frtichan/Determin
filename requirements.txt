@@ -1,0 +1,16 @@
+fastapi>=0.110,<1.0
+uvicorn[standard]>=0.23,<0.31
+pydantic>=2.6,<3.0
+sqlmodel>=0.0.16,<0.0.20
+SQLAlchemy>=2.0,<2.1
+polars>=0.20,<1.0
+pyarrow>=14,<19
+openpyxl>=3.1,<4.0
+jmespath>=1.0,<2.0
+python-multipart>=0.0.6,<0.0.10
+PyYAML>=6.0,<7.0
+jinja2>=3.1,<4.0
+openai>=1.40,<2.0
+python-dotenv>=1.0,<2.0
+
+
