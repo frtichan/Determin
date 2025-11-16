@@ -16,7 +16,8 @@ from .models import User
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # JWT設定
-SECRET_KEY = "your-secret-key-change-this-in-production"  # 本番環境では環境変数から取得
+import os
+SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-this-in-production")  # 本番環境では必ず環境変数を設定
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7日間
 
