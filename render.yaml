@@ -20,9 +20,9 @@ services:
       - key: PYTHON_VERSION
         value: 3.11.0
 
-  # PostgreSQL Database
-  - type: pgsql
-    name: dontlet-db
+# PostgreSQL Database
+databases:
+  - name: dontlet-db
     plan: starter  # 無料プランは "free"、有料は "starter" ($7/月)
     databaseName: dontlet
     user: dontlet
