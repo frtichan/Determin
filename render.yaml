@@ -3,7 +3,7 @@ services:
   - type: web
     name: dontlet-app
     runtime: python
-    plan: starter  # 無料プランから始める場合は "free"、有料は "starter" ($7/月)
+    plan: starter  # 無料プランは "free"、有料は "starter" ($7/月)
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
@@ -23,7 +23,7 @@ services:
 # PostgreSQL Database
 databases:
   - name: dontlet-db
-    plan: starter  # 無料プランは "free"、有料は "starter" ($7/月)
+    plan: standard  # 無料プランは "free"、有料は "standard" ($7/月)
     databaseName: dontlet
     user: dontlet
 
