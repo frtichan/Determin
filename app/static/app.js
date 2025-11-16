@@ -107,13 +107,26 @@ async function handleRegister(e) {
   }
   
   try {
+    console.log('登録リクエスト送信:', { email, name });
+    
     const resp = await fetch('/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password, name })
     });
     
-    const data = await resp.json();
+    console.log('レスポンスステータス:', resp.status);
+    
+    let data;
+    try {
+      data = await resp.json();
+      console.log('レスポンスデータ:', data);
+    } catch (jsonErr) {
+      console.error('JSONパースエラー:', jsonErr);
+      errorDiv.textContent = 'サーバーからの応答が不正です';
+      errorDiv.style.display = 'block';
+      return;
+    }
     
     if (resp.ok) {
       currentUser = data.user;
@@ -122,11 +135,19 @@ async function handleRegister(e) {
       await loadRecipes(); // レシピリストを再読み込み
       document.getElementById('registerFormElement').reset();
     } else {
-      errorDiv.textContent = data.detail || '登録に失敗しました';
+      // 詳細なエラーメッセージを表示
+      let errorMsg = data.detail || '登録に失敗しました';
+      if (typeof data.detail === 'object') {
+        // バリデーションエラーの場合
+        errorMsg = JSON.stringify(data.detail, null, 2);
+      }
+      console.error('登録エラー:', errorMsg);
+      errorDiv.textContent = errorMsg;
       errorDiv.style.display = 'block';
     }
   } catch (err) {
-    errorDiv.textContent = '登録中にエラーが発生しました';
+    console.error('登録中の例外:', err);
+    errorDiv.textContent = `登録中にエラーが発生しました: ${err.message}`;
     errorDiv.style.display = 'block';
   }
 }

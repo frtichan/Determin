@@ -20,10 +20,18 @@ class Settings(BaseModel):
 def get_settings() -> Settings:
     # Load .env once
     load_dotenv()
+    
+    # RenderではDATABASE_URL、ローカルではDB_URLまたはSQLiteをデフォルト
+    db_url = os.getenv("DATABASE_URL") or os.getenv("DB_URL") or "sqlite:///app.db"
+    
+    # PostgreSQL URLの形式を修正（psycopg2用）
+    if db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql://", 1)
+    
     return Settings(
         app_name=os.getenv("APP_NAME", "Deterministic Recipe Service"),
         data_dir=os.getenv("DATA_DIR", "data"),
-        db_url=os.getenv("DB_URL", "sqlite:///app.db"),
+        db_url=db_url,
         max_upload_mb=int(os.getenv("MAX_UPLOAD_MB", "10")),
         retention_days=int(os.getenv("RETENTION_DAYS", "90")),
         timezone=os.getenv("TIMEZONE", "UTC"),

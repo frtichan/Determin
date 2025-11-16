@@ -1,6 +1,7 @@
 """認証関連のユーティリティ関数とミドルウェア"""
 from datetime import datetime, timedelta
 from typing import Optional
+import hashlib
 
 from fastapi import Cookie, HTTPException, status
 from jose import JWTError, jwt
@@ -15,6 +16,18 @@ from .models import User
 # パスワードハッシュ化の設定
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+
+def _prepare_password(password: str) -> str:
+    """
+    bcryptの72バイト制限を回避するため、パスワードをSHA256でハッシュ化
+    これにより任意の長さのパスワードを固定長（64文字）にする
+    """
+    # パスワードをUTF-8でエンコードしてバイト列に変換
+    password_bytes = password.encode('utf-8')
+    # SHA256ハッシュを計算し、16進数文字列として返す（常に64文字）
+    hashed = hashlib.sha256(password_bytes).hexdigest()
+    return hashed
+
 # JWT設定
 import os
 SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-this-in-production")  # 本番環境では必ず環境変数を設定
@@ -24,12 +37,24 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7日間
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """パスワードを検証"""
-    return pwd_context.verify(plain_password, hashed_password)
+    # パスワードをSHA256で前処理してからbcryptで検証
+    prepared_password = _prepare_password(plain_password)
+    return pwd_context.verify(prepared_password, hashed_password)
 
 
 def get_password_hash(password: str) -> str:
     """パスワードをハッシュ化"""
-    return pwd_context.hash(password)
+    # パスワードをSHA256で前処理してからbcryptでハッシュ化
+    prepared_password = _prepare_password(password)
+    
+    # 念のため、72バイト以下であることを確認
+    prepared_bytes = prepared_password.encode('utf-8')
+    if len(prepared_bytes) > 72:
+        # 万が一の場合は先頭72バイトに切り詰める
+        prepared_password = prepared_bytes[:72].decode('utf-8', errors='ignore')
+    
+    # bcryptでハッシュ化
+    return pwd_context.hash(prepared_password)
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:

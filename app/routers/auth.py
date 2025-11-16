@@ -51,34 +51,35 @@ class AuthResponse(BaseModel):
 @router.post("/register", response_model=AuthResponse)
 def register(req: UserRegisterRequest, response: Response) -> AuthResponse:
     """新規ユーザー登録"""
-    with Session(get_engine()) as session:
-        # メールアドレスの重複チェック
-        existing_user = session.exec(
-            select(User).where(User.email == req.email)
-        ).first()
-        if existing_user:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="このメールアドレスは既に登録されています"
+    try:
+        with Session(get_engine()) as session:
+            # メールアドレスの重複チェック
+            existing_user = session.exec(
+                select(User).where(User.email == req.email)
+            ).first()
+            if existing_user:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="このメールアドレスは既に登録されています"
+                )
+            
+            # パスワードの長さチェック
+            if len(req.password) < 8:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="パスワードは8文字以上にしてください"
+                )
+            
+            # 新しいユーザーを作成
+            hashed_password = get_password_hash(req.password)
+            new_user = User(
+                email=req.email,
+                name=req.name,
+                hashed_password=hashed_password,
             )
-        
-        # パスワードの長さチェック
-        if len(req.password) < 8:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="パスワードは8文字以上にしてください"
-            )
-        
-        # 新しいユーザーを作成
-        hashed_password = get_password_hash(req.password)
-        new_user = User(
-            email=req.email,
-            name=req.name,
-            hashed_password=hashed_password,
-        )
-        session.add(new_user)
-        session.commit()
-        session.refresh(new_user)
+            session.add(new_user)
+            session.commit()
+            session.refresh(new_user)
         
         # JWTトークンを生成してCookieに設定
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -103,6 +104,14 @@ def register(req: UserRegisterRequest, response: Response) -> AuthResponse:
                 name=new_user.name,
                 is_active=new_user.is_active,
             )
+        )
+    except HTTPException:
+        # HTTPExceptionは再スロー
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="登録処理中にエラーが発生しました"
         )
 
 
